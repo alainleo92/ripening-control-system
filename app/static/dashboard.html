@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <style>
+    body { font-family: sans-serif; }
+    .sensor { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <h2>PLC en tiempo real</h2>
+  <div id="temperatures"></div>
+
+  <script>
+    const data = {};
+
+    function render() {
+      const container = document.getElementById("temperatures");
+      container.innerHTML = "";
+      for (const [variable, value] of Object.entries(data)) {
+        const div = document.createElement("div");
+        div.className = "variable";
+        div.textContent = `${variable}: ${value.toFixed(1)} °C`;
+        container.appendChild(div);
+      }
+    }
+
+    const ws = new WebSocket("ws://localhost:8000/ws");
+
+    ws.onmessage = function(event) {
+      const msg = JSON.parse(event.data);
+      const key = `${msg.room}/${msg.name}`;
+      data[key] = msg.value;
+      render();
+    };
+  </script>
+</body>
+</html>
