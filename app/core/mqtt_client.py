@@ -13,14 +13,28 @@ TOPICS = [
     "weintek/ripening/room1/status/temperature/sensor3",
     "weintek/ripening/room1/status/temperature/sensor4",
     "weintek/ripening/room1/status/temperature/sensor5",
+    "weintek/ripening/room1/status/temperature/change_over"
+    "weintek/ripening/room1/status/rh/reg_rh",
+    "weintek/ripening/room1/status/rh/sensor1",
+    "weintek/ripening/room1/status/rh/sensor2",
+    "weintek/ripening/room1/status/rh/sensor3",
+    "weintek/ripening/room1/status/rh/sensor4",
+    "weintek/ripening/room1/status/rh/sensor5",
+    "weintek/ripening/room1/status/rh/change_over"
 ]
 
 # Estructura para guardar las últimas mediciones por sala y sensor
 latest_temperatures = defaultdict(dict)
+latest_data = {}
 subscribers: list[Callable[[dict], None]] = []
 
-async def notify_all_clients(room: str, var: str, value: float):
-    message = {"room": room, "name": var, "value": value}
+async def notify_all_clients(room: str, root: str, control: str, var: str, value: float):
+    message = {
+                "room": room, 
+                "root": root, 
+                "control": control, 
+                "var": var, 
+                "value": value}
     await ws_manager.broadcast(message)
 
 def on_connect(client, userdata, flags, rc):
@@ -40,18 +54,32 @@ def on_message(client, userdata, msg):
         parts = msg.topic.strip("/").split("/")
         # parts = ['weintek', 'ripening', 'room1', 'status', 'temperature', 'sensor1']
         room = parts[2]         # 'room1'
+        root = parts[3]
+        control = parts[4]
         var = parts[5]       # 'sensor1'    
         print(f"🔍 parts: {parts}")
     
+        # latest_temperatures[room][var] = value
 
-        latest_temperatures[room][var] = value
-        print(f"🔍 latest_temperatures {room}/{var}: {latest_temperatures[room][var]}")
+        # Inicializar nodos del diccionario si no existen
+        if room not in latest_data:
+            latest_data[room] = {}
+        if root not in latest_data[room]:
+            latest_data[room][root] = {}
+        if control not in latest_data[room][root]:
+            latest_data[room][root][control] = {}
+        
+        latest_data[room][root][control][var] = {
+                        "value": value[0] if isinstance(value, list) else value,
+                        }
+
+        # print(f"🔍 latest_temperatures {room}/{root}/{control}/{var}: {latest_temperatures[room][var]}")
         
         # Usamos el loop guardado en lugar de get_event_loop()
         if mqtt_loop:
             mqtt_loop.call_soon_threadsafe(
                 asyncio.create_task,
-                notify_all_clients(room, var, value)
+                notify_all_clients(room, root, control, var, value)
             )
         else:
             print("⚠️ No se encontró event loop principal.")
