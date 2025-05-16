@@ -1,7 +1,8 @@
 # app/core/ws_manager.py
 
 from fastapi import WebSocket
-from typing import List
+from typing import Dict, List
+from collections import defaultdict
 
 class WebSocketManager:
     """
@@ -10,35 +11,45 @@ class WebSocketManager:
     """
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        # Agrupa clientes por room: "room1", "room2", ...
+        self.connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, room: str):
         """
         Acepta una nueva conexión WebSocket y la añade a la lista de conexiones activas.
         """
         await websocket.accept()
-        self.active_connections.append(websocket)
-        print(f"🟢 Cliente conectado. Total: {len(self.active_connections)}")
+        self.connections[room].append(websocket)
+        print(f"🟢 Cliente conectado a {room}. Total: {len(self.connections[room])}")
 
     def disconnect(self, websocket: WebSocket):
         """
         Elimina una conexión WebSocket de la lista de activas.
         """
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-            print(f"🔴 Cliente desconectado. Total: {len(self.active_connections)}")
+        for room, ws_list in self.connections.items():
+            if websocket in ws_list:
+                ws_list.remove(websocket)
+                print(f"🔴 Cliente desconectado de {room}. Total: {len(ws_list)}")
+                break
 
     async def broadcast(self, message: dict):
         """
         Envía un mensaje JSON a todos los clientes conectados.
         """
+        room = message.get("room")
+        if not room:
+            print("⚠️ Mensaje sin campo 'room'. No se envía.")
+            return
+        
         disconnected = []
-        for connection in self.active_connections:
+        
+        for connection in self.connections.get(room, []):
             try:
                 await connection.send_json(message)
             except Exception as e:
-                print(f"⚠️ Error enviando mensaje a un cliente: {e}")
+                print(f"⚠️ Error enviando mensaje a un cliente de {room}: {e}")
                 disconnected.append(connection)
+
         for ws in disconnected:
             self.disconnect(ws)
 

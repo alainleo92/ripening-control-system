@@ -1,53 +1,62 @@
 # app/websockets/ws_endpoint.py
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from app.core.ws_manager import ws_manager
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
+from app.core.ws_registry import ws_managers
 from app.core.mqtt_client import latest_data
 
 router = APIRouter()
 
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    """
-    Endpoint WebSocket para recibir conexiones del frontend.
-    """
-    await ws_manager.connect(websocket)
-    print("🟢 Cliente WebSocket conectado")
+@router.websocket("/ws/{room}")
+#    """
+#    Endpoint WebSocket para recibir conexiones del frontend.
+#    """
+async def websocket_endpoint_room(websocket: WebSocket, room: str):
     try:
-        # # Enviar las mediciones actuales al conectarse
-        # for room, sensors in latest_temperatures.items():
-        #     for sensor, value in sensors.items():
-        #         await websocket.send_json({
-        #             "room": room,
-        #             # "root": root, 
-        #             # "control": control,
-        #             "name": sensor,
-        #             "value": value
-        #         })
+        # Validar que la sala exista
+        if room not in latest_data:
+            await websocket.close(code=1008)
+            print(f"❌ Sala {room} no existe")
+            return
 
-        # Enviar las mediciones actuales al conectarse
-        for room, root_data in latest_data.items():
-            print(f"room: {room}")
-            for root, control_data in root_data.items():
-                print(f"root: {root}")
-                for control, sensors_data in control_data.items():
-                    print(f"control: {control}")
-                    for var, payload in sensors_data.items():
-                        print(f"value: {payload.get('value')}")
-                        await websocket.send_json({
-                            "room": room,
-                            "root": root,
-                            "control": control,
-                            "var": var,
-                            "value": payload.get("value"),
-                            "timestamp": payload.get("timestamp")
-                        })
+        manager = ws_managers[room]
+        await manager.connect(websocket, room)
+        print(f"🟢 Cliente conectado a {room}")
+
+        # Enviar mediciones actuales al conectar
+        for root, control_data in latest_data[room].items():
+            #print(f"roott: {root}")
+            for control, sensors_data in control_data.items():
+                #print(f"controll: {control}")
+                for var, payload in sensors_data.items():
+                   # print(f"valuee: {payload.get('value')}")
+                    if not isinstance(payload, dict):
+                        print(f"⚠️ Payload mal formado para {var}: {payload}")
+                        continue
+
+                    await websocket.send_json({
+                        "room": room,
+                        "root": root,
+                        "control": control,
+                        "var": var,
+                        "value": payload.get("value"),
+                        "timestamp": payload.get("timestamp")
+                    })
 
         while True:
             # Esperamos datos aunque no los usemos, para mantener la conexión viva
             await websocket.receive_text()
     except WebSocketDisconnect:
-        ws_manager.disconnect(websocket)
+        print(f"🔴 Cliente desconectado de {room}")
+        manager.disconnect(websocket)
     except Exception as e:
-        print(f"⚠️ Error inesperado en WebSocket: {e}")
-        ws_manager.disconnect(websocket)
+        print(f"⚠️ Error inesperado en WebSocket ({room}): {e}")
+        manager.disconnect(websocket)
+
+@router.get("/dashboard", response_class=HTMLResponse)
+def serve_dashboard():
+    return FileResponse("app/static/dashboard.html")
+
+
+
+
