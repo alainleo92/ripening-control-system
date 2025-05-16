@@ -2,51 +2,84 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard - Temperaturas</title>
+  <title>Dashboard - Room 1 - SUBSCRIPTION</title>
   <style>
-    body { font-family: sans-serif; }
+    body {
+      font-family: sans-serif;
+    }
+
+    .card {
+      border: 1px solid #aaa;
+      padding: 12px;
+      margin: 10px;
+      border-radius: 6px;
+      background: #f1f1f1;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      background-color: #ddd;
+      padding: 4px;
+    }
+
     .sensor {
-      padding: 8px;
-      margin: 5px;
+      padding: 4px;
+      margin: 3px 0;
+      background-color: #fff;
       border: 1px solid #ccc;
-      border-radius: 5px;
-      background-color: #f9f9f9;
+      border-radius: 3px;
     }
   </style>
 </head>
 <body>
-  <h2>Temperaturas en tiempo real</h2>
+  <h2>Datos en tiempo real</h2>
   <div id="temperatures"></div>
 
   <script>
     const data = {};
 
-    function updateOrCreateSensorElement(key, value) {
+    function updateOrCreateSensorElement(groupKey, sensorKey, value, ts) {
       const container = document.getElementById("temperatures");
-      let div = document.getElementById(key);
 
-      if (div) {
-        // Ya existe, actualizamos el valor
-        div.textContent = `${key}: ${value.toFixed(1)} °C`;
-      } else {
-        // No existe, lo creamos
-        div = document.createElement("div");
-        div.className = "sensor";
-        div.id = key;
-        div.textContent = `${key}: ${value.toFixed(1)} °C`;
-        container.appendChild(div);
+      // Obtener o crear el contenedor de la tarjeta (card)
+      let card = document.getElementById(`card-${groupKey}`);
+      if (!card) {
+        card = document.createElement("div");
+        card.className = "card";
+        card.id = `card-${groupKey}`;
+
+        const title = document.createElement("h3");
+        title.textContent = groupKey.toUpperCase();
+        card.appendChild(title);
+
+        container.appendChild(card);
       }
+
+      // Obtener o crear el elemento del sensor
+      const sensorId = `sensor-${groupKey}-${sensorKey}`;
+      let sensorElement = document.getElementById(sensorId);
+      if (!sensorElement) {
+        sensorElement = document.createElement("div");
+        sensorElement.className = "sensor";
+        sensorElement.id = sensorId;
+        card.appendChild(sensorElement);
+      }
+
+      const timeStr = ts ? new Date(ts).toLocaleString() : "";
+      sensorElement.textContent = `${sensorKey}: ${value} (${timeStr})`;
     }
 
     const ws = new WebSocket("ws://localhost:8000/ws");
 
     ws.onmessage = function(event) {
       const msg = JSON.parse(event.data);
-      const key = `${msg.room}/${msg.root}/${msg.control}/${msg.var}`; // asegúrate que 'var' esté en el JSON
-      const value = msg.value;
 
-      data[key] = value;
-      updateOrCreateSensorElement(key, value);
+      const groupKey = `${msg.root}/${msg.control}`;  // ej. "status/temperature"
+      const sensorKey = msg.var;                      // ej. "sensor1"
+      const value = msg.value;
+      const ts = msg.timestamp;
+
+      updateOrCreateSensorElement(groupKey, sensorKey, value, ts);
     };
   </script>
 </body>

@@ -40,8 +40,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             "control": control,
                             "var": var,
                             "value": payload.get("value"),
+                            "timestamp": payload.get("timestamp")
                         })
-
 
         while True:
             # Esperamos datos aunque no los usemos, para mantener la conexión viva
