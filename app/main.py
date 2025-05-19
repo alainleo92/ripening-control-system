@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.core.mqtt_client import start_mqtt, subscribers
 from app.core.ws_manager import ws_manager
-from app.api.routers import ws_endpoint
+from app.api.routers import ws_endpoint, param_router
 import asyncio
 
 app = FastAPI()
@@ -31,5 +31,6 @@ async def inject_ws_manager(request, call_next):
 def get_dashboard():
     return FileResponse("app/static/dashboard.html")
 
-# Registrar el router de WebSocket
+# Registrar el router
 app.include_router(ws_endpoint.router)
+app.include_router(param_router.router)

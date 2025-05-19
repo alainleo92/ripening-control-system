@@ -1,175 +1,282 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Dashboard - Ripening Control</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      background: #f5f5f5;
-      display: flex;
-    }
-
-    .sidebar {
-      width: 200px;
-      background-color: #2c3e50;
-      color: #fff;
-      height: 100vh;
-      padding-top: 20px;
-      position: fixed;
-    }
-
-    .sidebar h2 {
-      text-align: center;
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    .sidebar a {
-      display: block;
-      color: #ecf0f1;
-      text-decoration: none;
-      padding: 12px 20px;
-      transition: background-color 0.2s;
-    }
-
-    .sidebar a:hover {
-      background-color: #34495e;
-    }
-
-    .sidebar a.active {
-      background-color: #1abc9c;
-      font-weight: bold;
-    }
-
-    .main-content {
-      margin-left: 200px;
-      padding: 20px;
-      flex: 1;
-    }
-
-    h1, h2 {
-      text-align: center;
-      margin-top: 10px;
-    }
-
-    #card-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    .card {
-      flex: 1 1 calc(33.33% - 40px);
-      background: #ffffff;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      min-width: 280px;
-      max-width: 400px;
-      box-sizing: border-box;
-    }
-
-    .card h3 {
-      margin-top: 0;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
-    }
-
-    .sensor {
-      padding: 4px 8px;
-      margin: 5px 0;
-      background-color: #f9f9f9;
-      border-left: 4px solid #0077cc;
-      font-family: monospace;
-      font-size: 14px;
-    }
-
-    @media (max-width: 768px) {
-      .card {
-        flex: 1 1 100%;
+  <head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Ripening Control</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        background: #f5f5f5;
+        display: flex;
       }
 
       .sidebar {
-        display: none;
+        width: 200px;
+        background-color: #2c3e50;
+        color: #fff;
+        height: 100vh;
+        padding-top: 20px;
+        position: fixed;
+      }
+
+      .sidebar h2 {
+        text-align: center;
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+
+      .sidebar a {
+        display: block;
+        color: #ecf0f1;
+        text-decoration: none;
+        padding: 12px 20px;
+        transition: background-color 0.2s;
+      }
+
+      .sidebar a:hover {
+        background-color: #34495e;
+      }
+
+      .sidebar a.active {
+        background-color: #1abc9c;
+        font-weight: bold;
       }
 
       .main-content {
-        margin-left: 0;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="sidebar">
-    <h2>Salas</h2>
-    <a href="?room=room1" id="link-room1">Room 1</a>
-    <a href="?room=room2" id="link-room2">Room 2</a>
-    <a href="?room=room3" id="link-room3">Room 3</a>
-  </div>
-
-  <div class="main-content">
-    <h1 id="room-title">Dashboard</h1>
-    <h2>Datos en tiempo real</h2>
-    <div id="card-container"></div>
-  </div>
-
-  <script>
-    function getRoomFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("room") || "room1";
-    }
-
-    const room = getRoomFromURL();
-    document.getElementById("room-title").textContent = `Dashboard - ${room.toUpperCase()}`;
-
-    // Marcar enlace activo
-    const activeLink = document.getElementById(`link-${room}`);
-    if (activeLink) {
-      activeLink.classList.add("active");
-    }
-
-    const container = document.getElementById("card-container");
-
-    function updateOrCreateSensorElement(groupKey, sensorKey, value, ts) {
-      let card = document.getElementById(`card-${groupKey}`);
-      if (!card) {
-        card = document.createElement("div");
-        card.className = "card";
-        card.id = `card-${groupKey}`;
-
-        const title = document.createElement("h3");
-        title.textContent = groupKey.toUpperCase();
-        card.appendChild(title);
-
-        container.appendChild(card);
+        margin-left: 200px;
+        padding: 20px;
+        flex: 1;
       }
 
-      const sensorId = `sensor-${groupKey}-${sensorKey}`;
-      let sensorElement = document.getElementById(sensorId);
-      if (!sensorElement) {
-        sensorElement = document.createElement("div");
-        sensorElement.className = "sensor";
-        sensorElement.id = sensorId;
-        card.appendChild(sensorElement);
+      h1, h2 {
+        text-align: center;
+        margin-top: 10px;
       }
 
-      const timeStr = ts ? new Date(ts).toLocaleString() : "";
-      sensorElement.textContent = `${sensorKey}: ${value} (${timeStr})`;
-    }
+      #card-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+      }
 
-    const ws = new WebSocket(`ws://${location.host}/ws/${room}`);
+      .card {
+        flex: 1 1 calc(33.33% - 40px);
+        background: #ffffff;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        min-width: 280px;
+        max-width: 400px;
+        box-sizing: border-box;
+      }
 
-    ws.onmessage = function(event) {
-      const msg = JSON.parse(event.data);
-      const groupKey = `${msg.control}/${msg.root}`;
-      const sensorKey = msg.var;
-      updateOrCreateSensorElement(groupKey, sensorKey, msg.value, msg.timestamp);
-    };
-  </script>
-</body>
+      .card h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+      }
+
+      .sensor {
+        padding: 4px 8px;
+        margin: 5px 0;
+        background-color: #f9f9f9;
+        border-left: 4px solid #0077cc;
+        font-family: monospace;
+        font-size: 14px;
+      }
+
+      @media (max-width: 768px) {
+        .card {
+          flex: 1 1 100%;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Rooms</h2>
+      <a href="?room=room1" id="link-room1">Room 1</a>
+      <a href="?room=room2" id="link-room2">Room 2</a>
+      <a href="?room=room3" id="link-room3">Room 3</a>
+    </div>
+
+    <div class="main-content">
+      <h1 id="room-title">Dashboard</h1>
+      <h2>Datos en tiempo real</h2>
+      <div id="card-container"></div>
+    </div>
+
+    <!-- Botón para abrir el panel -->
+    <button onclick="openParamPanel()" style="position: fixed; bottom: 20px; right: 20px; padding: 10px 15px;">Editar Parámetros</button>
+    
+    <!-- Panel de edición -->
+    <div id="param-panel" style="display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: white; padding: 20px; border: 1px solid #ccc; border-radius: 8px; z-index: 1000;">
+      <h3>Parameters Edit</h3>
+      <label>Control:
+        <select id="control-select">
+          <option value="rh">RH</option>
+          <option value="temperature">Temperature</option>
+          <option value="gas">Gas</option>
+          <option value="vent">Ventilation</option>
+        </select>
+      </label><br><br>
+      <label>Parameter:
+        <input type="text" id="parameter-input" placeholder="Ej. target" onchange="updateValueInputType()">
+      </label><br><br>
+      <label>New Value:<br>
+        <input type="text" id="value-input" placeholder="Ej. target" oninput="updateValueInputType()">
+        <select id="bool-select" style="display: none;">
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      </label><br><br>
+      <button onclick="sendParamUpdate()">Send</button>
+      <button onclick="closeParamPanel()">Cancel</button>
+      <p id="param-status" style="margin-top: 10px; color: green;"></p>
+    </div>
+
+    <script>
+      function getRoomFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("room") || "room1";
+      }
+
+      const room = getRoomFromURL();
+      document.getElementById("room-title").textContent = `Dashboard - ${room.toUpperCase()}`;
+
+      // Marcar enlace activo
+      const activeLink = document.getElementById(`link-${room}`);
+      if (activeLink) {
+        activeLink.classList.add("active");
+      }
+
+      const container = document.getElementById("card-container");
+      
+      function updateOrCreateSensorElement(groupKey, sensorKey, value, ts) {
+        let card = document.getElementById(`card-${groupKey}`);
+        if (!card) {
+          card = document.createElement("div");
+          card.className = "card";
+          card.id = `card-${groupKey}`;
+
+          const title = document.createElement("h3");
+          title.textContent = groupKey.toUpperCase();
+          card.appendChild(title);
+
+          container.appendChild(card);
+        }
+
+        const sensorId = `sensor-${groupKey}-${sensorKey}`;
+        let sensorElement = document.getElementById(sensorId);
+        if (!sensorElement) {
+          sensorElement = document.createElement("div");
+          sensorElement.className = "sensor";
+          sensorElement.id = sensorId;
+          card.appendChild(sensorElement);
+        }
+
+        const timeStr = ts ? new Date(ts).toLocaleString() : "";
+        sensorElement.textContent = `${sensorKey}: ${value} (${timeStr})`;
+      }
+
+      const ws = new WebSocket(`ws://${location.host}/ws/${room}`);
+
+      ws.onmessage = function(event) {
+        const msg = JSON.parse(event.data);
+        const groupKey = `${msg.control}/${msg.root}`;
+        const sensorKey = msg.var;
+        updateOrCreateSensorElement(groupKey, sensorKey, msg.value, msg.timestamp);
+      };
+      
+      function openParamPanel() {
+        document.getElementById("param-panel").style.display = "block";
+      }
+
+      function closeParamPanel() {
+        document.getElementById("param-panel").style.display = "none";
+        document.getElementById("param-status").textContent = "";
+      }
+
+      const booleanParameters = [
+                                "enable_control", "ovd_cool", "ovd_heat", 
+                                "humidity_mode", "heat_mode", "vent_mode", "dich_monitor",
+                                "ovd_dh", "ovd_hm", "gas_on_off", "ovd_gas", "ovd_vent"
+                                ];
+
+      function updateValueInputType() {
+        const param = document.getElementById("parameter-input").value.toLowerCase();
+        const isBool = param.includes(param);  // Ajusta según tus reglas
+
+        if (isBool) {
+          document.getElementById("value-input").style.display = "none";
+          document.getElementById("bool-select").style.display = "inline";
+        } else {
+          document.getElementById("value-input").style.display = "inline";
+          document.getElementById("bool-select").style.display = "none";
+        }
+      }
+      
+      async function sendParamUpdate() {
+        const room = getRoomFromURL();  // Reutilizamos tu función actual
+        const control = document.getElementById("control-select").value;
+        const parameter = document.getElementById("parameter-input").value;
+        const rawValue  = document.getElementById("value-input").value.trim();
+        const isBool = booleanParameters.includes(parameter);
+
+        let value;
+        const boolVisible = document.getElementById("bool-select").style.display === "inline";
+
+        if (boolVisible) {
+          const boolVal = document.getElementById("bool-select").value;
+          value = boolVal === "true";
+        } else {
+          const rawVal = document.getElementById("value-input").value.trim();
+          if (rawVal === "" || isNaN(rawVal)) {
+            document.getElementById("param-status").textContent = "❌ Ingresa un valor numérico válido";
+            return;
+          }
+          value = parseFloat(rawVal);
+        }
+          // if (rawValue.toLowerCase() === "true") {
+          //   value = true;
+          // } else if (rawValue.toLowerCase() === "false") {
+          //     value = false;
+          // } else if (!isNaN(rawValue)) {
+          //     value = parseFloat(rawValue);
+          // } else {
+          //     document.getElementById("param-status").textContent = "❌ Valor no válido";
+          //     return;
+          // }
+
+        const payload = { room, control, parameter, value };
+        console.log("📤 Enviando payload:", payload);
+
+        const response = await fetch("/param/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          document.getElementById("param-status").textContent = `✅ Enviado a ${data.topic}`;
+        } else {
+          const error = await response.json();
+          document.getElementById("param-status").textContent = `❌ Error: ${error.detail}`;
+        }
+      }
+    </script>
+  </body>
 </html>
