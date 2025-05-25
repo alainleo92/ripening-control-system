@@ -8,6 +8,7 @@ from typing import Callable, Dict, Union
 import asyncio
 from app.core.ws_registry import ws_managers
 from app.config.topics import ALL_TOPICS  # o ROOM_TOPICS si necesitas por sala
+from app.api.services.mqtt_services import PARAMS_TO_CONVERT, celsius_to_fahrenheit, ROOT_TO_CONVERT
 
 BROKER_HOST = "localhost"
 BROKER_PORT = 1883
@@ -26,7 +27,7 @@ latest_data: Dict[str, Dict[str, Union[float, int, bool]]] = {
 subscribers: list[Callable[[dict], None]] = []
 
 async def notify_all_clients(room: str, root: str, control: str, var: str, value: any, ts: str):
-    print(f"📤 Enviando update WebSocket a {room} -> {var}: {value}")
+    #print(f"📤 Enviando update WebSocket a {room} -> {var}: {value}")
     
     message = {
                 "room": room, 
@@ -44,7 +45,7 @@ def on_connect(client, userdata, flags, rc):
 
     for topic in ALL_TOPICS:
         client.subscribe(topic)
-        print(f"🔗 Suscrito a: {topic}")
+        #print(f"🔗 Suscrito a: {topic}")
     
 def on_message(client, userdata, msg):
     try:
@@ -52,11 +53,19 @@ def on_message(client, userdata, msg):
         # value = float(payload["d"]["value"][0])
         
         raw_value = payload["d"]["value"][0]
+         # Para topic: weintek/ripening/room1/status/temperature/sensorX
+        parts = msg.topic.strip("/").split("/")
+        # parts = ['weintek', 'ripening', 'room1', 'status', 'temperature', 'sensor1']
+        room = parts[2]         # 'room1'
+        root = parts[3]
+        control = parts[4]
+        var = parts[5]       # 'sensor1'    
+        #(f"🔍 parts: {parts}")
 
         if isinstance(raw_value, bool):
             value = raw_value
         elif isinstance(raw_value, (int, float)):
-            value = raw_value
+            value = raw_value     
         elif isinstance(raw_value, str):
             if raw_value.lower() == "true":
                 value = True
@@ -71,24 +80,19 @@ def on_message(client, userdata, msg):
         else:
             print("❌ Tipo de valor no reconocido:", type(raw_value))
             return
+        
+        if control == "temperature" and var in PARAMS_TO_CONVERT and root in ROOT_TO_CONVERT:
+                value = celsius_to_fahrenheit(value)
+                print(f"🔍 value: {value}")
 
         
         ts = payload.get("ts")
         topic = msg.topic
         
         # print(f"🔍 Payload: {payload}")
-        # print(f"🔍 value: {value}")
+        
         # print(f"🔍 ts: {ts}")
         # print(f"🔍 topic: {topic}")
-
-        # Para topic: weintek/ripening/room1/status/temperature/sensorX
-        parts = msg.topic.strip("/").split("/")
-        # parts = ['weintek', 'ripening', 'room1', 'status', 'temperature', 'sensor1']
-        room = parts[2]         # 'room1'
-        root = parts[3]
-        control = parts[4]
-        var = parts[5]       # 'sensor1'    
-        print(f"🔍 parts: {parts}")
     
         # Inicializar nodos del diccionario si no existen
         if room not in latest_data:

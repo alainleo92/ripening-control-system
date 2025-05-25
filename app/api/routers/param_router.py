@@ -28,7 +28,7 @@ BOOLEAN_PARAMS = [
 async def update_param(data: ParamUpdate):
     # Validar entradas mínimamente
     allowed_rooms = {"room1", "room2", "room3"}
-    allowed_controls = {"rh", "temperature", "gas", "ventilation"}
+    allowed_controls = {"rh", "temperature", "gas", "vent"}
 
     if data.parameter in BOOLEAN_PARAMS and not isinstance(data.value, bool):
         raise HTTPException(status_code=400, detail="Este parámetro requiere un valor booleano.")
