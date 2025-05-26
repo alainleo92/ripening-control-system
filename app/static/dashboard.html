@@ -220,10 +220,12 @@
       "ovd_dh", "ovd_hm", "gas_on_off", "ovd_gas", "ovd_vent"
     ];
 
-    const ws = new WebSocket(`ws://${location.host}/ws/${room}`);
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${protocol}://${location.host}/ws/${room}`); 
     const wsStatus = document.getElementById('ws-status-indicator');
 
     ws.onopen = () => {
+      console.log("✅ WebSocket conectado");
       wsStatus.textContent = "WS: Conectado";
       wsStatus.style.backgroundColor = "#2ecc71"; // Verde
     };
