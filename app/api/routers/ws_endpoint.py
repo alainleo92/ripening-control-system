@@ -3,7 +3,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from app.core.ws_registry import ws_managers
-from app.core.mqtt_client import latest_data
+from app.core.mqtt_client import latest_data, mqtt_connected
 
 router = APIRouter()
 
@@ -40,7 +40,8 @@ async def websocket_endpoint_room(websocket: WebSocket, room: str):
                         "control": control,
                         "var": var,
                         "value": payload.get("value"),
-                        "timestamp": payload.get("timestamp")
+                        "timestamp": payload.get("timestamp"),
+                        "mqtt_status": mqtt_connected
                     })
 
         while True:

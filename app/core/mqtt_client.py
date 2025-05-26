@@ -3,20 +3,16 @@
 import json
 import time
 import paho.mqtt.client as mqtt
-from collections import defaultdict
 from typing import Callable, Dict, Union
 import asyncio
 from app.core.ws_registry import ws_managers
 from app.config.topics import ALL_TOPICS  # o ROOM_TOPICS si necesitas por sala
 from app.api.services.mqtt_services import PARAMS_TO_CONVERT, celsius_to_fahrenheit, ROOT_TO_CONVERT
-
-BROKER_HOST = "localhost"
-BROKER_PORT = 1883
-MAX_RETRIES = 10
-RETRY_DELAY = 5  # segundos entre intentos
+from app.config.mqtt import BROKER_HOST, BROKER_PORT, MAX_RETRIES, RETRY_DELAY 
 
 global mqtt_client  # Agregado
 client = mqtt.Client()
+mqtt_connected = False
 
 # Estructura para guardar las últimas mediciones por sala y sensor
 latest_data: Dict[str, Dict[str, Union[float, int, bool]]] = {
@@ -26,7 +22,7 @@ latest_data: Dict[str, Dict[str, Union[float, int, bool]]] = {
 }
 subscribers: list[Callable[[dict], None]] = []
 
-async def notify_all_clients(room: str, root: str, control: str, var: str, value: any, ts: str):
+async def notify_all_clients(room: str, root: str, control: str, var: str, value: any, ts: str, mqtt_connected: bool):
     #print(f"📤 Enviando update WebSocket a {room} -> {var}: {value}")
     
     message = {
@@ -35,13 +31,15 @@ async def notify_all_clients(room: str, root: str, control: str, var: str, value
                 "control": control, 
                 "var": var, 
                 "value": value,
-                "timestamp": ts
+                "timestamp": ts,
+                "mqtt_status": mqtt_connected
             }	
     
     await ws_managers[room].broadcast(message)
 
 def on_connect(client, userdata, flags, rc):
     print("✅ Conectado al broker MQTT.")
+    mqtt_connected = True
 
     for topic in ALL_TOPICS:
         client.subscribe(topic)
@@ -112,7 +110,7 @@ def on_message(client, userdata, msg):
         if mqtt_loop:
             mqtt_loop.call_soon_threadsafe(
                 asyncio.create_task,
-                notify_all_clients(room, root, control, var, value, ts)
+                notify_all_clients(room, root, control, var, value, ts, mqtt_connected)
             )
         else:
             print("⚠️ No se encontró event loop principal.")
@@ -122,6 +120,7 @@ def on_message(client, userdata, msg):
 
 def on_disconnect(client, userdata, rc):
     print("🔌 Desconectado. Reintentando conexión...")
+    mqtt_connected = False
     connect_mqtt_with_retries()
 
 def connect_mqtt_with_retries():
