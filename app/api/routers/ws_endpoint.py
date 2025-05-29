@@ -1,7 +1,7 @@
 # app/websockets/ws_endpoint.py
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from app.core.ws_registry import ws_managers
 from app.core.mqtt_client import latest_data, mqtt_connected
 
@@ -57,6 +57,7 @@ async def websocket_endpoint_room(websocket: WebSocket, room: str):
 @router.get("/dashboard", response_class=HTMLResponse)
 def serve_dashboard():
     return FileResponse("app/static/dashboard.html")
+
 
 
 

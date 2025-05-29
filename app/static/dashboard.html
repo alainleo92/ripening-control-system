@@ -144,6 +144,32 @@
         max-width: 100%;
       }
     }
+    .modulos-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .control-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      width: 250px;
+      background-color: #f9f9f9;
+    }
+
+    .control-card h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .control-value {
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
   </style>
 </head>
 <body>
@@ -159,6 +185,7 @@
       <h1 id="room-title">Dashboard</h1>
       <h2>Real-Time Monitoring</h2>
       <div class="card-container" id="card-container"></div>
+      <!-- <div id="modulos-control" class="modulos-container"></div> -->
     </div>
 
     <div id="ws-status-indicator" style="
@@ -221,7 +248,7 @@
     ];
 
     const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`wss://${location.host}/ws/${room}`);
+    const ws = new WebSocket(`ws://${location.host}/ws/${room}`);
     const wsStatus = document.getElementById('ws-status-indicator');
 
     ws.onopen = () => {
@@ -245,6 +272,7 @@
       const groupKey = `${msg.control}/${msg.root}`;
       const sensorKey = msg.var;
       updateOrCreateSensorElement(groupKey, sensorKey, msg.value, msg.timestamp);
+      crearCard(groupKey, msg)
     };
 
     const container = document.getElementById("card-container");
@@ -312,6 +340,23 @@
       document.getElementById("param-status").textContent = "";
       updateValueInputType();
     }
+
+    function crearCard(groupKey, msg) {
+      let card_control_module = document.getElementById(`card_control_module-${groupKey}`);
+      if (!card_control_module) {
+        if (msg.root == 'param' && msg.control == 'status'){
+            if (msg.control == 'temperature' || msg.control == 'rh'){
+            card_control_module = document.createElement("div");
+            card_control_module.className = "card";
+            card_control_module.id = `card_control_module-${groupKey}`;
+            card_control_module.innerHTML = `<h3>Contol ${msg.root.toUpperCase()}</h3>
+            `;
+            container.appendChild(card_control_module);
+          }
+        }
+      }
+    }
+    
   </script>
 </body>
 </html>

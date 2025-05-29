@@ -6,6 +6,8 @@ from fastapi.staticfiles import StaticFiles
 from app.core.mqtt_client import start_mqtt, subscribers
 from app.core.ws_manager import ws_manager
 from app.api.routers import ws_endpoint, param_router
+import app.core.mqtt_client as mqtt
+
 import asyncio
 import uvicorn
 
@@ -14,6 +16,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Obtener el loop principal
 main_event_loop = asyncio.get_event_loop()
+mqtt.main_event_loop = main_event_loop
 
 @app.on_event("startup")
 def on_startup():
