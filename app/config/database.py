@@ -2,6 +2,7 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
+from app.db.init_db import SessionLocal  # tu sessionmaker
 
 DATABASE_URL = "sqlite+aiosqlite:///./data.db"
 
@@ -20,3 +21,11 @@ async_session = sessionmaker(
 async def init_db_():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+

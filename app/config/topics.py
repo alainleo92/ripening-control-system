@@ -10,7 +10,7 @@ def generate_room_topics(room: str) -> list[str]:
 
     # --- STATUS TEMPERATURE ---
     topics += s(*[
-        "status/temperature/reg_temp",
+        "status/temperature/reg",
         *[f"status/temperature/sensor{i}" for i in range(1, 6)],
         "status/temperature/change_over",
         "status/temperature/cool_valve_status",
@@ -23,7 +23,7 @@ def generate_room_topics(room: str) -> list[str]:
 
     # --- STATUS RH ---
     topics += s(*[
-        "status/rh/reg_rh",
+        "status/rh/reg",
         *[f"status/rh/sensor{i}" for i in range(1, 6)],
         "status/rh/change_over",
         "status/rh/dh_valve_status",
@@ -70,6 +70,12 @@ def generate_room_topics(room: str) -> list[str]:
         "param/rh/control_sensor",
     ])
 
+    # --- STATUS GAS & VENT ---
+    topics += s(*[
+        "status/gas/time_left",
+        "status/vent/time_left",
+    ])
+    
     # --- PARAM GAS & VENT ---
     topics += s(*[
         "param/gas/inyec_time",

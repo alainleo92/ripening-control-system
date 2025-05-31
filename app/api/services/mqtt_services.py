@@ -1,13 +1,14 @@
 #Lista de parametros que deben convertirse de C a F
 from sqlalchemy.orm import Session
-from app.api.schemas.models import Site, Room
+from app.api.schemas.models import Site, Room, Measurement
 from datetime import datetime
 
-PARAMS_TO_CONVERT = ["reg_temp", "sensor1", "sensor2", "sensor3",
+PARAMS_TO_CONVERT = ["reg", "sensor1", "sensor2", "sensor3",
                      "sensor4", "sensor5", "change_over", "target",
-                     "disch_temp"
-
+                     "disch_temp", "time_left"
                      ]
+
+CONTROL_TO_CONVERT = ["gas", "vent"]
 
 ROOT_TO_CONVERT = ["status" , "param"]
 
@@ -41,9 +42,10 @@ def parse_topic_and_value(payload, msg):
     root = parts[3]
     control = parts[4]
     var = parts[5]
-    ts = parse_timestamp(payload.get("ts"))
+    ts = payload.get("ts")
+    ts_parse = parse_timestamp(payload.get("ts"))
     topic = msg.topic
-    return raw_value, room, root, control, var, ts, topic
+    return raw_value, room, root, control, var, ts, topic, ts_parse
 
 def initialize_and_update_latest_data(latest_data, room, root, control, var, value, ts):
     if room not in latest_data:
@@ -91,3 +93,37 @@ def parse_timestamp(value):
         except ValueError:
             pass
     return datetime.utcnow()  # Fallback a ahora
+
+def save_measurement_if_new(db: Session, room_id: int, variable: str,root: str, control: str, value: any, ts: datetime):
+    exists = db.query(Measurement).filter_by(
+                room_id= room_id,
+                var=variable,
+                timestamp= parse_timestamp(ts)
+            ).first()
+    
+    if not exists:
+        new_measurement = Measurement(
+                        room_id=room_id, 
+                        control=control,
+                        root= root,
+                        var=variable,
+                        value=value,
+                        timestamp=parse_timestamp(ts),
+                            )
+        db.add(new_measurement)
+        db.commit()
+        print(f"Guardado: {variable} = {value} @ {ts}")
+    else:
+        print(f"Saltado: {variable} ya registrado en {ts}")
+
+def decode_time_left_word_array(word_array):
+    chars = []
+
+    for word in word_array:
+        low_byte = word & 0xFF
+        high_byte = word >> 8
+        chars.append(chr(low_byte))
+        chars.append(chr(high_byte))
+
+    result = ''.join(chars) 
+    return result.strip('\x00') #Quita el caracter nulo al final

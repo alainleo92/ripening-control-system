@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.core.mqtt_client import start_mqtt, subscribers
 from app.core.ws_manager import ws_manager
-from app.api.routers import ws_endpoint, param_router
+from app.api.routers import ws_endpoint, param_router, measuremets
 import app.core.mqtt_client as mqtt
 
 import asyncio
@@ -38,6 +38,7 @@ def get_dashboard():
 # Registrar el router
 app.include_router(ws_endpoint.router)
 app.include_router(param_router.router)
+app.include_router(measuremets.router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=10000, reload=True)

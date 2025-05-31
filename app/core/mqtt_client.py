@@ -7,7 +7,7 @@ from typing import Callable, Dict, Union
 import asyncio
 from app.core.ws_registry import ws_managers
 from app.config.topics import ALL_TOPICS  # o ROOM_TOPICS si necesitas por sala
-from app.api.services.mqtt_services import PARAMS_TO_CONVERT, celsius_to_fahrenheit, ROOT_TO_CONVERT, parse_value, parse_topic_and_value, initialize_and_update_latest_data, get_or_create_room_id
+from app.api.services.mqtt_services import PARAMS_TO_CONVERT, CONTROL_TO_CONVERT, celsius_to_fahrenheit, ROOT_TO_CONVERT, parse_value, parse_topic_and_value, initialize_and_update_latest_data, get_or_create_room_id, save_measurement_if_new, decode_time_left_word_array
 from app.config.mqtt import BROKER_HOST, BROKER_PORT, MAX_RETRIES, RETRY_DELAY 
 from app.db.init_db import SessionLocal  # tu sessionmaker
 from datetime import datetime
@@ -54,13 +54,20 @@ def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode())
         
-        raw_value, room, root, control, var, ts, topic = parse_topic_and_value(payload, msg)
+        raw_value, room, root, control, var, ts, topic, ts_parse = parse_topic_and_value(payload, msg)
         # print(f"🔍 raw_value: {raw_value}, room: {room}, root: {root}, control: {control}, var: {var}")
         value = parse_value(raw_value)
         
         if control == "temperature" and var in PARAMS_TO_CONVERT and root in ROOT_TO_CONVERT:
                 value = celsius_to_fahrenheit(value)
                 # print(f"🔍 value: {value}")
+        
+        if control in CONTROL_TO_CONVERT and var in PARAMS_TO_CONVERT:
+            _value = payload["d"]["value"]
+            print(f"🔍 payload: {payload}")
+            print(f"🔍 raw_value: {_value}")  
+            value = decode_time_left_word_array(_value)
+            print(f"🔍 value: {value}") 
 
         # Inicializar nodos del diccionario si no existen
         initialize_and_update_latest_data(latest_data, room, root, control, var, value, ts)
@@ -82,16 +89,26 @@ def on_message(client, userdata, msg):
         
         #Guardar en la base de datos
         try:
-            measurement = Measurement(
-                room_id=room_id, 
-                control=control,
-                root= root,
-                var=var,
-                value=value,
-                timestamp=ts,
-            )
-            db.add(measurement)
-            db.commit()
+            save_measurement_if_new(db, 
+                                    room_id=room_id,
+                                    variable=var,
+                                    root=root,
+                                    control=control,
+                                    value=value,
+                                    ts=ts)
+            
+            
+            
+            # measurement = Measurement(
+            #     room_id=room_id, 
+            #     control=control,
+            #     root= root,
+            #     var=var,
+            #     value=value,
+            #     timestamp=ts_parse,
+            # )
+            # db.add(measurement)
+            # db.commit()
         
         except Exception as e:
             print(f"❌ Error al guardar en DB: {e}")
