@@ -48,9 +48,7 @@ def generate_room_topics(room: str) -> list[str]:
         *[f"param/temperature/monitor{i}" for i in range(1, 6)],
         "param/temperature/control_sensor",
         "param/temperature/enable_control",
-        "param/temperature/humidity_mode",
         "param/temperature/heat_mode",
-        "param/temperature/vent_mode",
         "param/temperature/dich_monitor",
     ])
 
@@ -68,6 +66,7 @@ def generate_room_topics(room: str) -> list[str]:
         "param/rh/chover_delay",
         *[f"param/rh/monitor{i}" for i in range(1, 6)],
         "param/rh/control_sensor",
+        "param/rh/humidity_mode",
     ])
 
     # --- STATUS GAS & VENT ---
@@ -84,6 +83,7 @@ def generate_room_topics(room: str) -> list[str]:
         "param/vent/vent_interval",
         "param/vent/vent_delay",
         "param/vent/ovd_vent",
+        "param/vent/vent_mode",
     ])
 
     return topics

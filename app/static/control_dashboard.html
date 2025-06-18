@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Room Control Dashboard</title>
+  <title>Ripening Control Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #1e2a38;
+      color: white;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #dfe6ec;
+      padding: 10px 15px;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #00a86b;
+      color: white;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      padding: 20px;
+      gap: 20px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    .data-section {
+      flex: 2;
+      overflow-y: auto;
+    }
+
+    .data-section h1,
+    .param-section h1 {
+      margin-top: 0;
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      flex: 1 1 300px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .sensor {
+      background-color: #f8f8f8;
+      border-left: 4px solid #0077cc;
+      margin-bottom: 5px;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-family: monospace;
+    }
+
+    .param-section {
+      flex: 1;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+
+    .param-section label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .param-section input,
+    .param-section select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+
+    .param-section button {
+      padding: 10px;
+      margin-top: 10px;
+      width: 49%;
+      cursor: pointer;
+      background-color: #00a86b;
+      border: none;
+      color: white;
+      border-radius: 4px;
+    }
+
+    .param-section button.cancel {
+      background-color: #999;
+    }
+
+    #param-status {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .content {
+        flex-direction: column;
+      }
+
+      .param-section {
+        max-width: 100%;
+      }
+    }
+    .modulos-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .control-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      width: 250px;
+      background-color: #f9f9f9;
+    }
+
+    .control-card h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .control-value {
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Rooms</h2>
+    <a href="?room=room1" id="link-room1">Room 1</a>
+    <a href="?room=room2" id="link-room2">Room 2</a>
+    <a href="?room=room3" id="link-room3">Room 3</a>
+  </div>
+
+  <div class="data-section">
+      <h1 id="title">Dashboard</h1>
+      <h2>Real-Time Monitoring</h2>
+      
+      
+      <div class="card-container" id="cardContainer"></div>
+      <div id="dashboard"></div>
+      
+      
+      
+      <!-- <div class="card-container" id="cardContainer"></div> -->
+      
+      <!-- NUEVO: Módulo de tarjetas de control -->
+      <!-- <h2>Controls</h2>
+      <div id="dashboard"></div> -->
+
+      <!-- <h2>Params</h2> -->
+      <!-- <div id="root-cards"></div> -->
+
+
+      
+      
+      <!-- <div id="control-card" class="card-container">
+        <p><strong>Setpoint: </strong> <span id="target"> --- </span></p>
+        <p><strong>Actual: </strong> <span id="reg"> --- </span></p>
+        <p><strong>ΔSetpoint: </strong> <span id="differential"> --- </span></p>
+      </div> -->
+
+    </div>;
+
+  <!-- <h1 id="title">Dashboard</h1>
+  <div class="card-container" id="cardContainer"></div>
+  <div id="dashboard"></div> -->
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const room = urlParams.get('room') || 'room1'; // fallback
+    const roots = ['status', 'param'];
+    const controls_all = ['temperature', 'rh', 'gas', 'vent'];
+    
+    const controls_resume = ['temperature', 'rh']; // Puedes agregar más
+
+    document.getElementById('title').innerText = `Dashboard - ${room}`;
+    const dashboard = document.getElementById("dashboard");
+
+    const cardContainer = document.getElementById("cardContainer");
+
+    function createCard(control, data) {
+      const card = document.createElement("div");
+      card.className = "control-card";
+      card.innerHTML = `
+        <h3>${control.toUpperCase()}</h3>
+        <div class="value"><span class="label">Reg:</span> ${data.values.reg}</div>
+        <div class="value"><span class="label">Setpoint:</span> ${data.values.target}</div>
+        <div class="value"><span class="label">Δ Setpoint:</span> ${data.values.differential}</div>
+      `;
+      cardContainer.appendChild(card);
+    }
+
+     async function fetchData(control) {
+      try {
+        const res = await fetch(`/api/measurements/latest/${control}/${room}`);
+        if (!res.ok) throw new Error(`Error en ${control}`);
+        const data = await res.json();
+        
+        createCard(control, data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    controls_resume.forEach(c => fetchData(c));
+
+    roots.forEach(root => {
+            const sectionTitle = document.createElement("h3");
+            sectionTitle.className = "section-title";
+            sectionTitle.textContent = `${root}`;
+            dashboard.appendChild(sectionTitle);
+
+            const container = document.createElement("div");
+            container.className = "card-container";
+            dashboard.appendChild(container);
+
+            controls_all.forEach(control => {
+                const card = document.createElement("div");
+                card.className = "card";
+                const url = `/api/measurements/all/${root}/${control}/${room}`;
+
+                fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error("No data");
+                        return res.json();
+                    })
+                    .then(data => {
+                        card.innerHTML = `<h3>${control.toUpperCase()}</h3>`;
+                        for (const [key, value] of Object.entries(data.values)) {
+                            card.innerHTML += `<div><strong>${key}:</strong> ${value}</div>`;
+                        }
+                    })
+                    .catch(() => {
+                        card.innerHTML = `<h3>${control.toUpperCase()}</h3><p class="error">Sin datos</p>`;
+                    });
+
+                container.appendChild(card);
+            });
+        });
+
+   
+  </script>
+</body>
+</html>

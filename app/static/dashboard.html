@@ -185,8 +185,26 @@
       <h1 id="room-title">Dashboard</h1>
       <h2>Real-Time Monitoring</h2>
       <div class="card-container" id="card-container"></div>
-      <!-- <div id="modulos-control" class="modulos-container"></div> -->
-    </div>
+      
+      <!-- NUEVO: Módulo de tarjetas de control -->
+      <h2>Controls</h2>
+      <div id="control-cards"></div>
+
+      <h2>Params</h2>
+      <!-- <div id="root-cards"></div> -->
+
+
+      
+      
+      <!-- <div id="control-card" class="card-container">
+        <p><strong>Setpoint: </strong> <span id="target"> --- </span></p>
+        <p><strong>Actual: </strong> <span id="reg"> --- </span></p>
+        <p><strong>ΔSetpoint: </strong> <span id="differential"> --- </span></p>
+      </div> -->
+
+    </div>;
+
+    
 
     <div id="ws-status-indicator" style="
       position: fixed;
@@ -247,6 +265,66 @@
       "ovd_dh", "ovd_hm", "gas_on_off", "ovd_gas", "ovd_vent"
     ];
 
+    const controls = ["temperature", "rh"];
+    const roots = ["status", "param", "alarms"];
+
+    async function loadControlCards() {
+      const container = document.getElementById("control-cards");
+      container.innerHTML = "";
+
+      for (const control of controls) {
+        try {
+          const res = await fetch(`/api/measurements/latest/${control}/${room}`);
+          const data = await res.json();
+
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <h4>${control.toUpperCase()}</h4>
+            <p><strong>Reg:</strong> ${data.values.reg}</p>
+            <p><strong>Setpoint:</strong> ${data.values.target}</p>
+            <p><strong>∆Setpoint:</strong> ${data.values.differential}</p>
+          `;
+
+          container.appendChild(card);
+        } catch (err) {
+          console.error(`Error cargando control ${control}:`, err);
+        }
+      }
+    }
+
+    // async function loadRootCards(room, control, root, values) {
+    //   const container = document.getElementById("root-cards");
+    //   container.innerHTML = "";
+
+    //   const title = document.createElement('h3');
+    //   title.textContent = `${root}`
+      
+    //   for (const root of roots) {
+    //     try {
+    //       const res = await fetch(`/api/measurements/all/${root}/${control}/${room}`);
+    //       const data = await res.json();
+
+    //       const card = document.createElement("div");
+    //       card.className = "card";
+    //       card.innerHTML = `
+    //         <h4>${root.toUpperCase()}</h4>
+    //         for
+            
+            
+            
+    //         <p><strong>Reg:</strong> ${data.values.reg}</p>
+    //         <p><strong>Setpoint:</strong> ${data.values.target}</p>
+    //         <p><strong>∆Setpoint:</strong> ${data.values.differential}</p>
+    //       `;
+
+    //       container.appendChild(card);
+    //     } catch (err) {
+    //       console.error(`Error cargando control ${control}:`, err);
+    //     }
+    //   }
+    // }
+
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`ws://${location.host}/ws/${room}`);
     const wsStatus = document.getElementById('ws-status-indicator');
@@ -272,7 +350,7 @@
       const groupKey = `${msg.control}/${msg.root}`;
       const sensorKey = msg.var;
       updateOrCreateSensorElement(groupKey, sensorKey, msg.value, msg.timestamp);
-      crearCard(groupKey, msg)
+      // crearCard(groupKey, msg)
     };
 
     const container = document.getElementById("card-container");
@@ -341,21 +419,7 @@
       updateValueInputType();
     }
 
-    function crearCard(groupKey, msg) {
-      let card_control_module = document.getElementById(`card_control_module-${groupKey}`);
-      if (!card_control_module) {
-        if (msg.root == 'param' && msg.control == 'status'){
-            if (msg.control == 'temperature' || msg.control == 'rh'){
-            card_control_module = document.createElement("div");
-            card_control_module.className = "card";
-            card_control_module.id = `card_control_module-${groupKey}`;
-            card_control_module.innerHTML = `<h3>Contol ${msg.root.toUpperCase()}</h3>
-            `;
-            container.appendChild(card_control_module);
-          }
-        }
-      }
-    }
+    loadControlCards();
     
   </script>
 </body>
