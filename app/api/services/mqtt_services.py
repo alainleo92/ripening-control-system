@@ -1,7 +1,7 @@
 #Lista de parametros que deben convertirse de C a F
 from sqlalchemy.orm import Session
 from app.api.schemas.models import Site, Room, Measurement
-from datetime import datetime
+from datetime import datetime, timedelta
 
 PARAMS_TO_CONVERT = ["reg", "sensor1", "sensor2", "sensor3",
                      "sensor4", "sensor5", "change_over", "target",
@@ -95,26 +95,43 @@ def parse_timestamp(value):
     return datetime.utcnow()  # Fallback a ahora
 
 def save_measurement_if_new(db: Session, room_id: int, variable: str,root: str, control: str, value: any, ts: datetime):
-    exists = db.query(Measurement).filter_by(
-                room_id= room_id,
-                var=variable,
-                timestamp= parse_timestamp(ts)
-            ).first()
-    
-    if not exists:
-        new_measurement = Measurement(
-                        room_id=room_id, 
-                        control=control,
-                        root= root,
-                        var=variable,
-                        value=value,
-                        timestamp=parse_timestamp(ts),
-                            )
-        db.add(new_measurement)
-        db.commit()
-        print(f"Guardado: {variable} = {value} @ {ts}")
+    now = parse_timestamp(ts)
+    # Caso especial: status/temperature o status/rh
+    if root == "status" and control.lower() in ["temperature", "rh"]:
+        last = db.query(Measurement).filter_by(
+            room_id=room_id,
+            var=variable,
+            control=control,
+            root=root
+        ).order_by(Measurement.timestamp.desc()).first()
+        if last and (now - last.timestamp) < timedelta(seconds=30):
+            print(f"Saltado: {variable} (última medición hace {(now - last.timestamp).total_seconds():.1f} segundos)")
+            return
     else:
-        print(f"Saltado: {variable} ya registrado en {ts}")
+        # Para el resto, no guardar si ya existe con el mismo timestamp
+        exists = db.query(Measurement).filter_by(
+            room_id=room_id,
+            var=variable,
+            control=control,
+            root=root,
+            timestamp=now
+        ).first()
+        if exists:
+            print(f"Saltado: {variable} ya registrado en {ts}")
+            return
+
+    # Guardar la medición
+    new_measurement = Measurement(
+        room_id=room_id,
+        control=control,
+        root=root,
+        var=variable,
+        value=value,
+        timestamp=now,
+    )
+    db.add(new_measurement)
+    db.commit()
+    print(f"Guardado: {variable} = {value} @ {now}")
 
 def decode_time_left_word_array(word_array):
     chars = []

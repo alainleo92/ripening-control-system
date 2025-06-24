@@ -33,5 +33,5 @@ def init_data():
     else:
         print("⚠️ La base de datos ya tiene datos. No se insertó nada.")
 
-if __name__ == "__main__":
-    init_data()
+# if __name__ == "__main__":
+#     init_data()

@@ -70,21 +70,30 @@ def get_all_root_values_for_room(room_name: str, root: str, control: str,  db: S
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    result = {}
-    measurement = (
-        db.query(Measurement)
+    # Obtén todos los var distintos para ese filtro
+    vars = (
+        db.query(Measurement.var)
         .filter(Measurement.room_id == room.id, Measurement.root == root, Measurement.control == control)
-            .order_by(Measurement.var.asc())
-            .all()
+        .distinct()
+        .all()
+    )
+    result = {}
+    for (var,) in vars:
+        m = (
+            db.query(Measurement)
+            .filter(
+                Measurement.room_id == room.id,
+                Measurement.root == root,
+                Measurement.control == control,
+                Measurement.var == var
+            )
+            .order_by(Measurement.timestamp.desc())
+            .first()
         )
-    if measurement:
-        for m in measurement:
-            if m.var not in result:
-                result[m.var] = m.value.strip('\x00')
-                # print(f"!!!!!Measurement: {m.var} ={m.value}")
-    else:
+        if m:
+            result[var] = m.value.strip('\x00')
+    if not result:
         raise HTTPException(status_code=404, detail="Not found")
-    
     return {
         "room": room_name,
         "root": root,

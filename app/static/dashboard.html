@@ -268,30 +268,30 @@
     const controls = ["temperature", "rh"];
     const roots = ["status", "param", "alarms"];
 
-    async function loadControlCards() {
-      const container = document.getElementById("control-cards");
-      container.innerHTML = "";
+    // async function loadControlCards() {
+    //   const container = document.getElementById("control-cards");
+    //   container.innerHTML = "";
 
-      for (const control of controls) {
-        try {
-          const res = await fetch(`/api/measurements/latest/${control}/${room}`);
-          const data = await res.json();
+    //   for (const control of controls) {
+    //     try {
+    //       const res = await fetch(`/api/measurements/latest/${control}/${room}`);
+    //       const data = await res.json();
 
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <h4>${control.toUpperCase()}</h4>
-            <p><strong>Reg:</strong> ${data.values.reg}</p>
-            <p><strong>Setpoint:</strong> ${data.values.target}</p>
-            <p><strong>∆Setpoint:</strong> ${data.values.differential}</p>
-          `;
+    //       const card = document.createElement("div");
+    //       card.className = "card";
+    //       card.innerHTML = `
+    //         <h4>${control.toUpperCase()}</h4>
+    //         <p><strong>Reg:</strong> ${data.values.reg}</p>
+    //         <p><strong>Setpoint:</strong> ${data.values.target}</p>
+    //         <p><strong>∆Setpoint:</strong> ${data.values.differential}</p>
+    //       `;
 
-          container.appendChild(card);
-        } catch (err) {
-          console.error(`Error cargando control ${control}:`, err);
-        }
-      }
-    }
+    //       container.appendChild(card);
+    //     } catch (err) {
+    //       console.error(`Error cargando control ${control}:`, err);
+    //     }
+    //   }
+    // }
 
     // async function loadRootCards(room, control, root, values) {
     //   const container = document.getElementById("root-cards");
@@ -419,7 +419,7 @@
       updateValueInputType();
     }
 
-    loadControlCards();
+    // loadControlCards();
     
   </script>
 </body>

@@ -7,12 +7,14 @@ from app.core.mqtt_client import start_mqtt, subscribers
 from app.core.ws_manager import ws_manager
 from app.api.routers import ws_endpoint, param_router, measuremets
 import app.core.mqtt_client as mqtt
+from app.db.init_db import init_data
 
 import asyncio
 import uvicorn
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+init_data()
 
 # Obtener el loop principal
 main_event_loop = asyncio.get_event_loop()

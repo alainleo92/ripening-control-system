@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from app.core.ws_registry import ws_managers
+from app.config.ws_registry import ws_managers
 from app.core.mqtt_client import latest_data, mqtt_connected
 
 router = APIRouter()
