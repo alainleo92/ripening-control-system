@@ -96,6 +96,9 @@ def parse_timestamp(value):
 
 def save_measurement_if_new(db: Session, room_id: int, variable: str,root: str, control: str, value: any, ts: datetime):
     now = parse_timestamp(ts)
+    tolerance = timedelta(milliseconds=500)
+    interval = timedelta(seconds=30)
+
     # Caso especial: status/temperature o status/rh
     if root == "status" and control.lower() in ["temperature", "rh"]:
         last = db.query(Measurement).filter_by(
@@ -104,9 +107,12 @@ def save_measurement_if_new(db: Session, room_id: int, variable: str,root: str, 
             control=control,
             root=root
         ).order_by(Measurement.timestamp.desc()).first()
-        if last and (now - last.timestamp) < timedelta(seconds=30):
-            print(f"Saltado: {variable} (última medición hace {(now - last.timestamp).total_seconds():.1f} segundos)")
-            return
+        
+        if last:
+            diff = now - last.timestamp
+            if diff < (interval - tolerance):
+                print(f"Saltado: {variable} (última medición hace {diff.total_seconds():.3f} segundos)")
+                return
     else:
         # Para el resto, no guardar si ya existe con el mismo timestamp
         exists = db.query(Measurement).filter_by(
